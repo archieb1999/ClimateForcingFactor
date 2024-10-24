@@ -89,34 +89,12 @@ def MovingLinReg(F, A, b):
 
     X = np.roll(X, number_of_columns // 2, axis=0)
 
-    print(X, '\n\n\n')
-
     TotalYearlyAbsoluteChange = np.sum(np.abs(A) * np.abs(X), axis=1)
-    print(TotalYearlyAbsoluteChange)
-
     IndividualContributionMatrix = np.abs(X * A) / TotalYearlyAbsoluteChange[:, None]
-
-    print(IndividualContributionMatrix)
 
     df = pd.DataFrame(IndividualContributionMatrix, columns=F, index=Year[1:])
 
-    print(df["CO2"])
-    # print(df.iloc[:,0])
-
-    # sns.barplot(x="CO2", y="Year", data=[df.index, df["CO2"]])
-
-    '''fig, axarr = plt.subplots(nrows=len(df.columns), ncols=1)
-    colors = ['r', 'b', 'g', 'y', 'k']
-    for i in range(len(df.columns)):
-        axarr[i].bar(df.index, df.iloc[:, i], color=colors[i])
-        axarr[i].set_ylabel(df.columns[i])
-
-    fig.tight_layout()
-    plt.show()
-    # plt.bar(df.index, df.iloc[:,i])
-    # plt.show()'''
-
-    # extract color palette, the palette can be changed
+    # Enhanced line plot with proper titles and labels
     pal = list(sns.color_palette(palette='viridis', n_colors=len(F)).as_hex())
 
     fig = go.Figure()
@@ -125,16 +103,58 @@ def MovingLinReg(F, A, b):
                                  y=df[d],
                                  name=d,
                                  line_color=p,
-                                 fill=None))  # tozeroy
+                                 fill=None))
+
+    fig.update_layout(
+        title='Relative Contribution of Climate Forcing Factors Over Time',
+        xaxis_title='Year',
+        yaxis_title='Relative Contribution to Temperature Change',
+        hovermode='x unified',
+        showlegend=True,
+        legend_title='Forcing Factors'
+    )
 
     fig.show()
 
-    fig = make_subplots(rows=len(df.columns), cols=1, shared_xaxes=False, subplot_titles=df.columns)
+    # Enhanced bar plots with proper titles and labels
+    fig = make_subplots(
+        rows=len(df.columns),
+        cols=1,
+        shared_xaxes=True,
+        subplot_titles=[f'{factor} Contribution to Temperature Change' for factor in df.columns],
+        vertical_spacing=0.1
+    )
+
     row = 1
     for trace in df.columns:
-        fig.add_trace(go.Bar(x=df.index, y=df[trace], name=trace), row=row, col=1)
+        fig.add_trace(
+            go.Bar(
+                x=df.index,
+                y=df[trace],
+                name=trace,
+                hovertemplate='Year: %{x}<br>Contribution: %{y:.3f}<extra></extra>'
+            ),
+            row=row,
+            col=1
+        )
         row += 1
+
+    fig.update_layout(
+        height=200 * len(df.columns),  # Adjust height based on number of subplots
+        title_text='Individual Climate Forcing Factors Analysis (1867-1914)',
+        showlegend=False,
+        hovermode='x unified'
+    )
+
+    # Update y-axes labels
+    for i in range(len(df.columns)):
+        fig.update_yaxes(title_text='Relative Contribution', row=i + 1, col=1)
+
+    # Update x-axis label for the bottom plot only
+    fig.update_xaxes(title_text='Year', row=len(df.columns), col=1)
+
     fig.show()
+
 
 if __name__ == '__main__':
     datamatrix = np.column_stack((dCO2, dSun, dSOx, dOT, dSOI))
